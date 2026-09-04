@@ -4,7 +4,7 @@
 #
 # Paths below are placeholders. Run install.py, which resolves them.
 #
-#   dsh web --patch ./sec-edgar.cordis.yml --patch ./market.cordis.yml
+#   dsh --profile web --patch ./sec-edgar.cordis.yml --patch ./market.cordis.yml
 #
 # Tools appear as mcp__market__*:
 #   market_quote           price, market cap, shares outstanding, enterprise value

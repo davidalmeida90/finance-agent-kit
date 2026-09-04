@@ -140,7 +140,7 @@ def main() -> int:
         print('MISSING: --identity not given. Set EDGAR_IDENTITY in sec-edgar.cordis.yml.')
     if not missing and edgar and a.identity:
         print("Ready. Start the harness with:\n")
-        print("  dsh web --patch ./sec-edgar.cordis.yml --patch ./market.cordis.yml")
+        print("  dsh --profile web --patch ./sec-edgar.cordis.yml --patch ./market.cordis.yml")
 
     if shutil.which("soffice") is None and sys.platform != "win32":
         print("\nNote: tools/recalc.py needs LibreOffice on this platform.")

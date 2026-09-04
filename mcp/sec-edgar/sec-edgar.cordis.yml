@@ -3,7 +3,7 @@
 #
 # Paths below are placeholders. Run install.py, which resolves them.
 #
-#   dsh web --patch ./sec-edgar.cordis.yml --patch ./market.cordis.yml
+#   dsh --profile web --patch ./sec-edgar.cordis.yml --patch ./market.cordis.yml
 #
 # Tools appear as mcp__sec-edgar__*. The ones that carry a valuation:
 #   edgar_company   profile plus multi-year income statement, balance sheet, cash flow

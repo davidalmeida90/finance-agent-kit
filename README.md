@@ -21,7 +21,7 @@ Read `bootstrap.py` before running it. It is 100 lines and it downloads code fro
 Then start the harness:
 
 ```bash
-dsh web --patch ./sec-edgar.cordis.yml --patch ./market.cordis.yml
+dsh --profile web --patch ./sec-edgar.cordis.yml --patch ./market.cordis.yml
 ```
 
 You end up with the skills in `.dsh/skills`, two resolved patch files, and a `finance-agent-kit/` directory holding the MCP servers. Keep that directory: the patches point at it.
