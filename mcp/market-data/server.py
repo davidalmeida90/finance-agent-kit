@@ -159,7 +159,161 @@ def _peer(ticker: str) -> dict:
     return row
 
 
+def _trailing(ticker: str) -> dict:
+    """Trailing twelve months, assembled from the latest 10-K and 10-Q.
+
+    TTM = full fiscal year + year-to-date this year - year-to-date same point last year.
+
+    Exists because getting this wrong is the most expensive mistake in a DCF and the
+    easiest to make. A model anchored on the last completed fiscal year while two
+    newer quarters are on file understates every projection year, and the error
+    compounds. Assembling it by hand takes three filings and careful column matching,
+    so it gets skipped even when the data is right there.
+    """
+    import os
+    os.environ.setdefault("EDGAR_IDENTITY", os.environ.get("EDGAR_IDENTITY", ""))
+    from edgar import Company
+
+    c = Company(ticker)
+    k = c.latest("10-K")
+    q = c.latest("10-Q")
+    out: dict = {
+        "ticker": ticker.upper(),
+        "annual_filing": {"form": "10-K", "accession": k.accession_no,
+                          "filed": str(k.filing_date), "period_end": str(k.period_of_report)},
+    }
+    if q is None or str(q.period_of_report) <= str(k.period_of_report):
+        out["quarterly_filing"] = None
+        out["ttm_available"] = False
+        out["base_period_recommendation"] = (
+            f"Use the fiscal year ended {k.period_of_report}. No 10-Q newer than the 10-K is on file."
+        )
+        return out
+
+    out["quarterly_filing"] = {"form": "10-Q", "accession": q.accession_no,
+                               "filed": str(q.filing_date), "period_end": str(q.period_of_report)}
+
+    def frame(stmt):
+        return stmt.to_dataframe() if stmt is not None else None
+
+    kobj, qobj = k.obj(), q.obj()
+    frames = {
+        "k_inc": frame(getattr(kobj, "income_statement", None)),
+        "k_cf": frame(getattr(kobj, "cash_flow_statement", None)),
+        "q_inc": frame(getattr(qobj, "income_statement", None)),
+        "q_cf": frame(getattr(qobj, "cash_flow_statement", None)),
+    }
+
+    def pick(df, concepts, labels):
+        """First row matching a standard concept, else a label substring."""
+        if df is None:
+            return None
+        for col in ("standard_concept", "concept"):
+            if col in df.columns:
+                for want in concepts:
+                    hit = df[df[col].astype(str).str.contains(want, case=False, na=False)]
+                    if not hit.empty:
+                        return hit.iloc[0]
+        if "label" in df.columns:
+            for want in labels:
+                hit = df[df["label"].astype(str).str.lower().str.contains(want, na=False)]
+                if not hit.empty:
+                    return hit.iloc[0]
+        return None
+
+    def annual_value(row, df):
+        if row is None or df is None:
+            return None
+        cols = [c for c in df.columns if "(FY)" in str(c)] or \
+               [c for c in df.columns if str(c)[:4].isdigit()]
+        for c in cols:
+            v = row.get(c)
+            if v is not None and pd.notna(v):
+                return float(v)
+        return None
+
+    def ytd_pair(row, df):
+        """Current and prior-year year-to-date values from a 10-Q frame."""
+        if row is None or df is None:
+            return None, None
+        cols = sorted([c for c in df.columns if "(YTD)" in str(c)], reverse=True)
+        if len(cols) < 2:
+            return None, None
+        a, b = row.get(cols[0]), row.get(cols[1])
+        a = float(a) if a is not None and pd.notna(a) else None
+        b = float(b) if b is not None and pd.notna(b) else None
+        return a, b
+
+    ITEMS = {
+        "revenue": (("Revenues", "RevenueFromContract"), ("revenue", "net sales"), "k_inc", "q_inc"),
+        "operating_income": (("OperatingIncomeLoss",), ("operating income",), "k_inc", "q_inc"),
+        "depreciation_amortisation": (("DepreciationDepletionAndAmortization", "DepreciationAndAmortization"),
+                                      ("depreciation",), "k_cf", "q_cf"),
+        # Filers tag capex several ways. NVIDIA uses PaymentsToAcquireProductiveAssets
+        # with a standard_concept of CapitalExpenses, not the PP&E concept most
+        # examples assume, so match on both plus a label fallback.
+        "capital_expenditure": (("PaymentsToAcquirePropertyPlantAndEquipment",
+                                 "PaymentsToAcquireProductiveAssets", "CapitalExpenditure",
+                                 "CapitalExpenses"),
+                                ("purchases related to property", "purchases of property",
+                                 "capital expenditure", "additions to property"), "k_cf", "q_cf"),
+    }
+
+    ttm, detail = {}, {}
+    for name, (concepts, labels, kf, qf) in ITEMS.items():
+        kdf, qdf = frames[kf], frames[qf]
+        fy = annual_value(pick(kdf, concepts, labels), kdf)
+        cur, prior = ytd_pair(pick(qdf, concepts, labels), qdf)
+        if fy is not None and cur is not None and prior is not None:
+            val = fy + cur - prior
+            ttm[name] = abs(val) if name == "capital_expenditure" else val
+            detail[name] = {"fiscal_year": fy, "ytd_current": cur, "ytd_prior_year": prior,
+                            "formula": "fiscal_year + ytd_current - ytd_prior_year"}
+        else:
+            ttm[name] = None
+            detail[name] = {"fiscal_year": fy, "ytd_current": cur, "ytd_prior_year": prior,
+                            "note": "incomplete, do not substitute the fiscal year figure without saying so"}
+
+    rev = ttm.get("revenue")
+    out["ttm_available"] = rev is not None
+    out["ttm"] = ttm
+    out["ttm_detail"] = detail
+    if rev:
+        out["ttm_ratios"] = {
+            k2: (round(v / rev, 5) if v is not None else None)
+            for k2, v in (("operating_margin", ttm.get("operating_income")),
+                          ("da_percent_of_revenue", ttm.get("depreciation_amortisation")),
+                          ("capex_percent_of_revenue", ttm.get("capital_expenditure")))
+        }
+        out["_use_these_ratios"] = (
+            "Use these actual ratios for the projection, not a rule of thumb. Show the "
+            "historical figure beside whatever you assume."
+        )
+        out["base_period_recommendation"] = (
+            f"Base the model on trailing twelve months ended {q.period_of_report}, "
+            f"revenue {rev:,.0f}. The fiscal year ended {k.period_of_report} is stale by two or more "
+            "quarters. A first forecast year at or below this trailing figure means the base is wrong."
+        )
+    return out
+
+
 TOOLS = [
+    Tool(
+        name="trailing_financials",
+        description=(
+            "START HERE for any valuation. Trailing twelve months revenue, operating income, "
+            "D&A and capex, assembled from the latest 10-K and any newer 10-Q, with both "
+            "accession numbers and the actual capital intensity ratios. "
+            "Use the trailing figures as the model's base period, never the last completed "
+            "fiscal year when a newer 10-Q exists: the fiscal year can be two or more quarters "
+            "stale and the error compounds through every projection year."
+        ),
+        inputSchema={
+            "type": "object",
+            "properties": {"ticker": {"type": "string", "description": "Ticker, e.g. NVDA"}},
+            "required": ["ticker"],
+        },
+    ),
     Tool(
         name="market_quote",
         description=(
@@ -262,6 +416,10 @@ async def list_tools():
 @app.call_tool()
 async def call_tool(name: str, arguments: dict):
     def run():
+        if name == "trailing_financials":
+            return _stamp({**_trailing(arguments["ticker"]),
+                           "_source_override": "SEC filings via EdgarTools, not market data"})
+
         if name == "market_quote":
             return _stamp(_quote(arguments["ticker"]))
 

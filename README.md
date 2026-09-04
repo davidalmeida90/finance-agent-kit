@@ -94,10 +94,11 @@ Vendored unmodified. Provenance, commit hash and known defects in [`skills/VENDO
 
 **`sec-edgar`** wraps [EdgarTools](https://github.com/dgunning/edgartools). Keyless, read only, and the authority for anything an issuer reports. Company financials, individual filings, narrative sections, and the notes where segment and geographic revenue actually live.
 
-**`market-data`** is original, and exists because filings do not carry share prices. Four tools:
+**`market-data`** is original, and exists because filings do not carry share prices and nothing assembles trailing twelve months from the ones that do. Six tools:
 
 | Tool | Returns |
 |---|---|
+| `trailing_financials` | TTM revenue, EBIT, D&A and capex from the latest 10-K plus any newer 10-Q, with both accessions and the actual capital intensity ratios |
 | `market_quote` | price, market cap, shares outstanding, enterprise value |
 | `market_beta` | raw, Blume adjusted, and bottom-up sector beta |
 | `equity_risk_premium` | Damodaran's current implied ERP, live, with its date and measure |
@@ -108,6 +109,8 @@ No API key. yfinance and public data underneath.
 
 ### Tools
 
+**`tools/verify.py`** spawns both MCP servers exactly as dsh does, straight from the generated patch files, completes the handshake, lists the tools and makes one live call each. Run it after installing. A failed MCP mount is otherwise invisible: the child dies on startup, the tools are simply absent, and the model answers from memory instead of from filings with no error anywhere.
+
 **`tools/recalc.py`** opens a workbook in Excel or LibreOffice so its formulas gain cached values, then verifies coverage and reports any `#REF!`, `#DIV/0!` or `#VALUE!`. openpyxl writes formulas without results, so without this step a generated workbook reads as empty to every validator downstream, including the one shipped inside `dcf-model`.
 
 ## Why the market MCP does what it does
@@ -117,6 +120,8 @@ Two of its tools exist because the skills get these wrong, and the errors are la
 **Beta.** `dcf-model` says to use a five year monthly regression beta. Run that on NVIDIA in September 2026 and Yahoo returns 2.217, which produces a 17% WACC and a valuation 49% below the market price. That beta is measured across the period the stock rose roughly tenfold, so it captures the re-rating rather than systematic risk. Damodaran's semiconductor sector beta across 66 firms is 1.49. Relevered to NVIDIA's own capital structure it is essentially unchanged, because the company carries almost no debt, and the valuation lands within 10% of the market price. `market_beta` returns all three figures and recommends the bottom-up one, warning when the raw beta diverges from its sector by more than 30%.
 
 **Equity risk premium.** The skill says "5.0-6.0% (market standard)" with no source and no measure named. Damodaran currently publishes five ERP estimates spanning 3.56% to 6.05%. His current implied figure is 4.14%; his ten year average cash flow yield is 6.05%. Both are defensible, they are different estimators, and on a high beta name the gap is worth tens of dollars per share. `equity_risk_premium` fetches the current implied figure live with its date and measure so the choice is recorded rather than assumed.
+
+**Base period.** Nothing in the skills forces the trailing twelve month base, and `dcf-model` explicitly permits "LTM or most recent fiscal year". In a real run the agent had the newer 10-Q in front of it, mentioned the quarter's revenue 120 times, and still anchored on the fiscal year, which was two quarters stale and cost about a third of the valuation. `trailing_financials` assembles the base in one call so the correct choice is the easy one.
 
 **The check neither skill contains.** Before reporting a valuation, solve for the discount rate the current share price implies. Where that differs from your WACC by more than about 300 basis points, the inputs are the more likely problem. That one step catches most bad cost of capital assumptions immediately.
 
