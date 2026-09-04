@@ -6,6 +6,28 @@ Seven valuation skills from Anthropic's Apache 2.0 financial-services repository
 
 ## Install
 
+From inside your project directory. No git needed, nothing left over.
+
+```bash
+curl -sL https://raw.githubusercontent.com/davidalmeida90/finance-agent-kit/main/bootstrap.py -o bootstrap.py
+py -3 -m pip install mcp yfinance pandas lxml edgartools openpyxl python-docx matplotlib
+py -3 bootstrap.py --identity "Your Name you@example.com"
+```
+
+On PowerShell, swap the first line for `iwr https://raw.githubusercontent.com/davidalmeida90/finance-agent-kit/main/bootstrap.py -OutFile bootstrap.py`.
+
+Read `bootstrap.py` before running it. It is 100 lines and it downloads code from the internet, which is the category of script worth reading first.
+
+Then start the harness:
+
+```bash
+dsh web --patch ./sec-edgar.cordis.yml --patch ./market.cordis.yml
+```
+
+You end up with the skills in `.dsh/skills`, two resolved patch files, and a `finance-agent-kit/` directory holding the MCP servers. Keep that directory: the patches point at it.
+
+### Or clone, if you prefer
+
 ```bash
 git clone https://github.com/davidalmeida90/finance-agent-kit.git
 cd finance-agent-kit
@@ -13,15 +35,13 @@ py -3 -m pip install -r requirements.txt
 py -3 install.py --target /path/to/your/project --identity "Your Name you@example.com"
 ```
 
-Then start the harness from your project:
+### Two things that catch people
 
-```bash
-dsh web --patch ./sec-edgar.cordis.yml --patch ./market.cordis.yml
-```
+`--identity` is an SEC fair-access requirement, not a secret or a credential. It is the name and email the SEC sees on your requests.
 
-`--identity` is an SEC fair-access requirement, not a secret. It is the name and email the SEC sees on requests.
+Your project needs a `.git` directory. dsh finds the project root by walking up looking for one, so without it your skills resolve to some parent directory and quietly fail to load. Run `git init` first.
 
-Your project needs a `.git` directory. dsh finds the project root by walking up for one, so without it skills and instructions resolve somewhere higher up.
+Add `--skills-dir .agents/skills` if you want the same install to work in Claude Code as well as dsh.
 
 ## What is in it
 
