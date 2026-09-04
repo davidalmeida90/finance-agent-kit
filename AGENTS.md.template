@@ -2,6 +2,20 @@
 
 Installed by finance-agent-kit. Edit freely; it will not be overwritten on reinstall.
 
+## Which skill covers what
+
+Load the skill before producing the deliverable, not after. Descriptions in the catalog are not enough on their own: in a real run the agent loaded `dcf-model` because the request said "model", never connected "report" to `initiating-coverage`, and wrote a 678 word report against a skill that asks for 6,000 to 8,000 words with charts and comps.
+
+| Deliverable | Skill |
+|---|---|
+| DCF model | `dcf-model` |
+| Trading comparables | `comps-analysis` |
+| Initiation or coverage report | `initiating-coverage` |
+| Post-earnings note | `earnings-analysis` |
+| Linked three statement model | `3-statement-model` |
+| Auditing or tracing a workbook | `audit-xls` |
+| Spreadsheet layout conventions | `xlsx-author` |
+
 ## Data hierarchy
 
 Follow in order and say which tier a number came from.
