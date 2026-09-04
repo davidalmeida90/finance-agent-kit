@@ -121,12 +121,19 @@ def main() -> int:
     if not a.no_agents_md:
         agents = target / "AGENTS.md"
         template = KIT / "AGENTS.md.template"
-        if agents.exists():
-            print(f"\nAGENTS.md already exists, left alone. Kit rules are in {template}")
-        elif template.exists():
-            agents.write_text(template.read_text(encoding="utf-8"), encoding="utf-8")
+        if template.exists():
+            new = template.read_text(encoding="utf-8")
+            # Replace rather than preserve: a stale AGENTS.md silently costs you the
+            # kit's rules, and the failure is invisible because the agent still runs,
+            # just without them. Nothing is lost, the old one is kept alongside.
+            if agents.exists() and agents.read_text(encoding="utf-8") != new:
+                backup = target / "AGENTS.md.previous"
+                backup.write_text(agents.read_text(encoding="utf-8"), encoding="utf-8")
+                print(f"\nexisting AGENTS.md kept as {backup.name}")
+            agents.write_text(new, encoding="utf-8")
             print(f"\ninstructions -> {agents.name}")
             print("  data hierarchy, cost of capital sourcing, model and output rules")
+            print("  pass --no-agents-md to keep your own instead")
 
     # 4. what still needs doing
     print()
