@@ -1,0 +1,33 @@
+# SEC filings via EdgarTools. Read only, no API key, and the authority for
+# every figure an issuer reports.
+#
+# Paths below are placeholders. Run install.py, which resolves them.
+#
+#   dsh web --patch ./sec-edgar.cordis.yml --patch ./market.cordis.yml
+#
+# Tools appear as mcp__sec-edgar__*. The ones that carry a valuation:
+#   edgar_company   profile plus multi-year income statement, balance sheet, cash flow
+#   edgar_filing    one filing by company and form, or by accession number
+#   edgar_read      narrative sections: risk_factors, mda, business
+#   edgar_notes     the notes behind the numbers, including segment and geography
+#   edgar_compare   side by side peer financials, straight from filings
+#
+# edgar_notes is the one people miss. Segment revenue, revenue by end market and
+# revenue by geography all live in a note rather than in the face statements, so
+# a model built only on edgar_company has no product or regional detail at all.
+#
+# EDGAR_IDENTITY is an SEC fair-access requirement, not a secret: it is your
+# name and email, sent so the SEC can contact heavy users. The real constraint
+# on bulk work is their 10 requests per second limit, not cost.
+- insert:
+    - id: sec-edgar-mcp
+      name: '@deepseek-ai/dsh-mcp-client'
+      config:
+        serverName: sec-edgar
+        transport: stdio
+        command: '{{EDGARTOOLS_MCP}}'
+        env:
+          EDGAR_IDENTITY: '{{EDGAR_IDENTITY}}'
+        # Parsing a full 10-K data object is slow on the first fetch, before
+        # EdgarTools has cached the filing locally.
+        toolCallTimeoutMs: 120000

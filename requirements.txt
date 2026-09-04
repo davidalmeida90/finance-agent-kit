@@ -1,0 +1,17 @@
+# MCP servers
+mcp>=1.0.0
+yfinance>=0.2.40
+pandas>=2.0.0
+lxml>=5.0.0            # pandas.read_html, for the Damodaran sector beta table
+
+# sec-edgar MCP
+edgartools>=3.0.0
+
+# model and report generation
+openpyxl>=3.1.0
+python-docx>=1.1.0
+matplotlib>=3.8.0
+
+# optional: recalc.py uses Excel via COM on Windows when present.
+# Without it, recalc.py falls back to LibreOffice.
+pywin32>=306 ; sys_platform == "win32"

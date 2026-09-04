@@ -1,0 +1,42 @@
+# Market data MCP. Supplies what SEC filings do not carry: share price, shares
+# outstanding, beta, the equity risk premium, the risk-free rate, and peer
+# multiples.
+#
+# Paths below are placeholders. Run install.py, which resolves them.
+#
+#   dsh web --patch ./sec-edgar.cordis.yml --patch ./market.cordis.yml
+#
+# Tools appear as mcp__market__*:
+#   market_quote           price, market cap, shares outstanding, enterprise value
+#   market_beta            raw, Blume adjusted, and bottom-up sector beta
+#   equity_risk_premium    Damodaran's current implied ERP, live, with its date
+#   risk_free_rate         US Treasury yield, 10y default
+#   peer_metrics           peer multiples, medians over complete rows only
+#
+# Two of these exist because of mistakes made while building the kit.
+#
+# market_beta returns three betas rather than one. A raw 5 year regression beta
+# is the most leveraged input in a DCF and the least stable, and on a stock that
+# has re-rated hard it measures the re-rating rather than systematic risk. The
+# tool relevers Damodaran's sector unlevered beta to the company's own capital
+# structure and recommends that instead, warning when the raw figure diverges
+# from its sector by more than 30%.
+#
+# equity_risk_premium exists because "5.0 to 6.0%, market standard" is not a
+# source. Damodaran publishes several ERP estimators that currently span 3.56%
+# to 6.05%, and picking the wrong one moves a high-beta valuation by tens of
+# dollars per share. The tool returns the current implied figure with its date
+# and the measure it corresponds to, so the choice is recorded.
+- insert:
+    - id: market-mcp
+      name: '@deepseek-ai/dsh-mcp-client'
+      config:
+        serverName: market
+        transport: stdio
+        command: '{{PYTHON}}'
+        args:
+          - '{{KIT_DIR}}/mcp/market-data/server.py'
+        cwd: '{{KIT_DIR}}/mcp/market-data'
+        # A peer sweep is one sequential HTTP round trip per name, and the first
+        # call also fetches Damodaran's industry table. The 30s default clips it.
+        toolCallTimeoutMs: 120000

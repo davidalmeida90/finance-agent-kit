@@ -1,0 +1,29 @@
+finance-agent-kit
+Copyright (c) 2026 David Arias
+
+This product includes software developed by Anthropic, PBC.
+
+The contents of skills/ are copied unmodified from:
+  https://github.com/anthropics/financial-services
+  Commit 69cbc81467a5dced793eee03dec4658aa24ef856 (2026-08-24)
+  Licensed under the Apache License, Version 2.0
+
+A copy of that licence is included as LICENSE-APACHE-2.0-anthropic.
+Per-skill provenance is recorded in skills/VENDORED.md.
+
+Everything outside skills/ is original work licensed under the MIT Licence,
+see LICENSE. That includes:
+
+  mcp/market-data/server.py   market data MCP server
+  mcp/*/*.cordis.yml          harness composition patches
+  tools/recalc.py             workbook recalculation and verification
+  install.py                  installer
+  examples/                   worked NVIDIA valuation
+
+Anthropic's xlsx, docx, pdf and pptx skills are NOT included. They are
+distributed under separate terms that prohibit redistribution. See
+skills/VENDORED.md.
+
+This repository is a technical toolkit. Nothing in it is investment advice,
+and the worked example under examples/ is a demonstration of tooling rather
+than a recommendation on any security.
