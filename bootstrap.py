@@ -79,7 +79,7 @@ def main() -> int:
         for part in ("mcp", "tools", "skills"):
             shutil.copytree(src / part, kit_dir / part, dirs_exist_ok=True)
         for f in ("install.py", "README.md", "NOTICE", "LICENSE", "LICENSE-APACHE-2.0-anthropic",
-                  "requirements.txt"):
+                  "requirements.txt", "AGENTS.md.template"):
             if (src / f).exists():
                 shutil.copy2(src / f, kit_dir / f)
         print(f"kit -> {kit_dir}\n")

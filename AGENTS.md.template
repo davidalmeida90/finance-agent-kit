@@ -1,0 +1,43 @@
+# Valuation project
+
+Installed by finance-agent-kit. Edit freely; it will not be overwritten on reinstall.
+
+## Data hierarchy
+
+Follow in order and say which tier a number came from.
+
+1. **`sec-edgar` MCP** for anything an issuer reports: revenue, margins, capex, debt, cash, share count, segment and geographic splits. Cite accession number and XBRL tag. Segment and geography live in the notes, so use `edgar_notes`, not just `edgar_company`.
+2. **`market` MCP** for what filings do not carry: share price, market capitalisation, beta, equity risk premium, risk-free rate, peer multiples. Label as market data with the retrieval date. Never use this tier for a figure that exists in a filing.
+3. **Web search** for qualitative context only: competitive landscape, management background, industry commentary, addressable market. **Web search may never supply a number.**
+
+Never use a figure recalled from memory, at any tier.
+
+## Cost of capital
+
+Most leveraged inputs in a DCF and the easiest to get wrong. Source them, never assume them.
+
+- **Beta**: take `beta_bottom_up` from `market_beta`, which relevers the sector unlevered beta to this company's capital structure. Do not use a single stock regression beta as the base case. Where the tool warns that raw beta diverges from its sector, show the raw figure as a sensitivity and say why it was not used.
+- **Equity risk premium**: use `equity_risk_premium`. It returns the current implied figure with its date and measure. Do not use a hardcoded range; the skills state "5.0-6.0% market standard" without naming a measure, and defensible estimates currently span 3.56% to 6.05%.
+- **Risk-free rate**: use `risk_free_rate`, matched in date to the ERP.
+
+**Before reporting any valuation, solve for the discount rate implied by the current share price and state it.** Where the gap to your applied WACC exceeds roughly 300 basis points, treat your inputs as suspect before treating the market as wrong.
+
+## Model
+
+- Every projection, margin, discount factor, present value and sensitivity cell is a live Excel formula. Only raw historicals, assumption drivers and current market data are hardcoded, each with a cell comment naming its source.
+- Sensitivity grids use an odd number of rows and columns so the centre cell equals the base case, and the centre cell must reproduce the model's own implied price.
+- Report both terminal methods, Gordon growth and exit multiple. Where they disagree materially, say so rather than picking the flattering one.
+- **Run `finance-agent-kit/tools/recalc.py` on the workbook before calling it done.** openpyxl writes formulas without values, so until this runs the workbook reads as empty to every validator, including the one inside `dcf-model`. Fix anything it reports.
+
+## Output
+
+- English. Numbers as digits. No dashes as punctuation, no emoji.
+- Every figure carries its source: accession number and XBRL tag for filed data, feed and date for market data.
+- State what could not be determined. A gap named is acceptable, a gap filled by guessing is not. Where a peer returns incomplete data, drop it and say so rather than estimating it.
+- No recommendation without a stated basis.
+
+## Scope
+
+- Write only inside this project. Outputs go in `output/`.
+- You may write `.cordis.yml` patch files here. Never write to `$DSH_HOME/profiles/`, and never mount a composition row yourself.
+- Python is `py -3`.

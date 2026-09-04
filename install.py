@@ -67,6 +67,9 @@ def main() -> int:
     ap.add_argument("--skills-dir", default=".dsh/skills",
                     help="Skill root inside the target. .dsh/skills for dsh, .agents/skills for both.")
     ap.add_argument("--python", default=sys.executable, help="Interpreter the MCP server runs under.")
+    ap.add_argument("--no-agents-md", action="store_true",
+                    help="Skip writing AGENTS.md. Without it the rules go into the project's "
+                         "instruction file, so you do not repeat them in every prompt.")
     a = ap.parse_args()
 
     target = Path(a.target).resolve()
@@ -112,7 +115,20 @@ def main() -> int:
         out.write_text(text, encoding="utf-8")
         print(f"  {out.name}")
 
-    # 3. what still needs doing
+    # 3. instructions. dsh loads AGENTS.md from the project root into every
+    #    session as a durable baseline message, so the rules that would
+    #    otherwise be retyped in each prompt live here once.
+    if not a.no_agents_md:
+        agents = target / "AGENTS.md"
+        template = KIT / "AGENTS.md.template"
+        if agents.exists():
+            print(f"\nAGENTS.md already exists, left alone. Kit rules are in {template}")
+        elif template.exists():
+            agents.write_text(template.read_text(encoding="utf-8"), encoding="utf-8")
+            print(f"\ninstructions -> {agents.name}")
+            print("  data hierarchy, cost of capital sourcing, model and output rules")
+
+    # 4. what still needs doing
     print()
     missing = check_deps()
     if missing:
