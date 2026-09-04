@@ -23,10 +23,13 @@ directory, and report back rather than mounting anything.
    harness.** The composition is read at boot, so mounting is the user's step:
 
    ```
-   dsh --profile web --patch ./sec-edgar.cordis.yml --patch ./market.cordis.yml
+   dsh --profile web --patch ./sec-edgar.cordis.yml --patch ./market.cordis.yml --port 3081
    ```
 
-   Add `--port 3081` if something is already serving on 3080.
+   Port 3081 rather than the 3080 default, because the session you are running in is
+   almost certainly already serving on 3080. Only one process can hold a port, so
+   reusing it fails with `EADDRINUSE` and the new harness never starts. Drop `--port`
+   only if nothing is serving on 3080.
 
 Installing writes an `AGENTS.md` into the project carrying the data, cost of capital and
 output rules. Any existing one is kept as `AGENTS.md.previous`. Pass `--no-agents-md` to
@@ -49,7 +52,7 @@ Read `bootstrap.py` before running it. It is 100 lines and it downloads code fro
 Then start the harness:
 
 ```bash
-dsh --profile web --patch ./sec-edgar.cordis.yml --patch ./market.cordis.yml
+dsh --profile web --patch ./sec-edgar.cordis.yml --patch ./market.cordis.yml --port 3081
 ```
 
 You end up with the skills in `.dsh/skills`, two resolved patch files, and a `finance-agent-kit/` directory holding the MCP servers. Keep that directory: the patches point at it.
