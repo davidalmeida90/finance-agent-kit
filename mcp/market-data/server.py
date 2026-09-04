@@ -554,7 +554,31 @@ async def call_tool(name: str, arguments: dict):
 
         raise ValueError(f"unknown tool: {name}")
 
-    result = await asyncio.get_running_loop().run_in_executor(None, run)
+    # Return failures as a payload rather than letting them propagate. An
+    # exception escaping here surfaces to the client as "Connection closed" or
+    # "Not connected", which reads as the server having died and tells the model
+    # nothing about what actually went wrong.
+    try:
+        result = await asyncio.wait_for(
+            asyncio.get_running_loop().run_in_executor(None, run), timeout=110
+        )
+    except asyncio.TimeoutError:
+        result = {
+            "error": "timeout",
+            "tool": name,
+            "detail": "Exceeded 110s. First calls are slow: trailing_financials downloads "
+                      "company facts and market_beta fetches the sector beta table. Both cache, "
+                      "so retrying once usually succeeds.",
+        }
+    except Exception as e:  # noqa: BLE001 - any failure must reach the model as data
+        result = {
+            "error": type(e).__name__,
+            "tool": name,
+            "detail": str(e)[:500],
+            "hint": "If this mentions edgar or edgartools, the package may be broken or "
+                    "mid-reinstall. Do not build a virtualenv: "
+                    "py -3 -m pip install --force-reinstall edgartools, then restart the harness.",
+        }
     return [TextContent(type="text", text=json.dumps(result, indent=1, default=str))]
 
 
