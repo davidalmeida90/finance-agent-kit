@@ -22,6 +22,23 @@ Most leveraged inputs in a DCF and the easiest to get wrong. Source them, never 
 
 **Before reporting any valuation, solve for the discount rate implied by the current share price and state it.** Where the gap to your applied WACC exceeds roughly 300 basis points, treat your inputs as suspect before treating the market as wrong.
 
+## Base period
+
+- **Check for a 10-Q newer than the latest 10-K before anything else.** Build the base from trailing twelve months, not the last completed fiscal year. A base that is one year stale compounds through every projection year and moves the answer more than any assumption you will argue about afterwards.
+- State the base period and its end date in the output.
+- Sanity check the first forecast year against the trailing figure. If FY+1 revenue lands at or below trailing twelve months while you are forecasting growth, the base is wrong.
+
+## Capital intensity and working capital
+
+- Capex, D&A and the change in net working capital as a percentage of revenue are **computed from the last four quarters of actuals**, never assumed. Show the historical figure beside the assumption so the basis is visible.
+- Change in net working capital is zero only when the balance sheet shows it. Growing receivables and inventory are a real cash drag, and zeroing that line without checking overstates free cash flow.
+- State whether net cash includes marketable securities, and cite the balance sheet date it came from. Cash and equivalents alone is a different number from cash plus short and long term investments.
+
+## Coverage
+
+- A DCF on its own is not a valuation. Call `peer_metrics` and report EV/EBITDA and margins against the peer median, saying how many peers survived the completeness filter.
+- Report both terminal methods, Gordon growth and exit multiple. Where terminal value exceeds roughly 70% of enterprise value, the exit multiple cross-check is not optional.
+
 ## Model
 
 - Every projection, margin, discount factor, present value and sensitivity cell is a live Excel formula. Only raw historicals, assumption drivers and current market data are hardcoded, each with a cell comment naming its source.
