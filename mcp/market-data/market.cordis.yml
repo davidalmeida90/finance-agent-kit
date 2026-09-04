@@ -37,6 +37,13 @@
         args:
           - '{{KIT_DIR}}/mcp/market-data/server.py'
         cwd: '{{KIT_DIR}}/mcp/market-data'
+        env:
+          # Required by trailing_financials, which reads SEC filings through
+          # EdgarTools. Without it EdgarTools prompts for the identity on stdin
+          # via rich.prompt, and in a stdio MCP server that writes the prompt to
+          # stdout, corrupting the JSON-RPC stream. The client sees "Request
+          # timed out" then "Connection closed" and the server looks crashed.
+          EDGAR_IDENTITY: '{{EDGAR_IDENTITY}}'
         # A peer sweep is one sequential HTTP round trip per name, and the first
         # call also fetches Damodaran's industry table. The 30s default clips it.
         toolCallTimeoutMs: 120000

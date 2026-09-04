@@ -171,7 +171,23 @@ def _trailing(ticker: str) -> dict:
     so it gets skipped even when the data is right there.
     """
     import os
-    os.environ.setdefault("EDGAR_IDENTITY", os.environ.get("EDGAR_IDENTITY", ""))
+
+    # Fail loudly before touching EdgarTools. With no identity set it prompts on
+    # stdin through rich.prompt, and in a stdio server that prompt goes to
+    # stdout and corrupts the JSON-RPC stream: the client reports a timeout,
+    # then a closed connection, and the server appears to have crashed when it
+    # is really sitting waiting for a console that does not exist.
+    identity = (os.environ.get("EDGAR_IDENTITY") or "").strip()
+    if not identity:
+        return {
+            "error": "EDGAR_IDENTITY not set",
+            "detail": "This tool reads SEC filings and the SEC requires a name and email on "
+                      "every request. Without it EdgarTools blocks on an interactive prompt "
+                      "that a stdio server cannot answer.",
+            "fix": "Add an env block to market.cordis.yml setting EDGAR_IDENTITY, or rerun "
+                   "install.py with --identity, then restart the harness.",
+        }
+
     from edgar import Company
 
     c = Company(ticker)
