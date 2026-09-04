@@ -4,6 +4,34 @@ Equity valuation skills and data MCPs for [DeepSeek Harness](https://github.com/
 
 Seven valuation skills from Anthropic's Apache 2.0 financial-services repository, plus two MCP servers that supply the data those skills assume you already have from a Bloomberg terminal.
 
+## Install from an agent
+
+If an agent is doing this for you, these are the steps. Run them from the project
+directory, and report back rather than mounting anything.
+
+1. Confirm the project has a `.git` directory. If not, run `git init` first: dsh resolves
+   the project root by walking up for one, and without it the skills load from the wrong
+   place or not at all.
+2. Download `bootstrap.py` from
+   `https://raw.githubusercontent.com/davidalmeida90/finance-agent-kit/main/bootstrap.py`
+   and read it before running it.
+3. Check these import, and install any that do not: `mcp`, `yfinance`, `pandas`, `lxml`,
+   `edgartools`, `openpyxl`, `python-docx`, `matplotlib`. On Windows, `pywin32` as well.
+4. Run `bootstrap.py`, passing `--identity "<name> <email>"`. That value is the SEC's
+   fair-access requirement, so ask the user for it rather than inventing one.
+5. Report the skills now visible and the two patch files written. **Do not start the
+   harness.** The composition is read at boot, so mounting is the user's step:
+
+   ```
+   dsh --profile web --patch ./sec-edgar.cordis.yml --patch ./market.cordis.yml
+   ```
+
+   Add `--port 3081` if something is already serving on 3080.
+
+Installing writes an `AGENTS.md` into the project carrying the data, cost of capital and
+output rules. Any existing one is kept as `AGENTS.md.previous`. Pass `--no-agents-md` to
+keep yours instead.
+
 ## Install
 
 From inside your project directory. No git needed, nothing left over.
